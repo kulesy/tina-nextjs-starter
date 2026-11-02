@@ -3,25 +3,30 @@ on:
   pull_request:
     types: [opened, synchronize, reopened]
 env:
-  NEXT_PUBLIC_TINA_CLIENT_ID: ${{ secrets.NEXT_PUBLIC_TINA_CLIENT_ID }}
-  TINA_TOKEN: ${{ secrets.TINA_TOKEN }}
-  NEXT_PUBLIC_TINA_BRANCH: ${{ github.head_ref }}
+  # Dummy values for fork-safe PR builds. `pnpm build-local` uses
+  # `tinacms build --content=local --skip-cloud-checks`, so it indexes
+  # content from the filesystem and skips cloud validation — these env
+  # vars just need to be present (not real) to satisfy the CLI's
+  # requirement that clientId/branch/token be configured.
+  NEXT_PUBLIC_TINA_CLIENT_ID: fake-id-for-smoke
+  TINA_TOKEN: fake-token-for-smoke
+  NEXT_PUBLIC_TINA_BRANCH: main
 jobs:
   build:
     runs-on: ubuntu-latest
     name: Build sample
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Setup node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version-file: .nvmrc
 
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v6
         name: Install pnpm
         id: pnpm-install
         with:
-          version: 9
+          version: 10
           run_install: false
 
       - name: Get pnpm store directory
@@ -30,7 +35,7 @@ jobs:
         run: |
           echo "STORE_PATH=$(pnpm store path)" >> $GITHUB_OUTPUT
 
-      - uses: actions/cache@v4
+      - uses: actions/cache@v6
         name: Setup pnpm cache
         with:
           path: ${{ steps.pnpm-cache.outputs.STORE_PATH }}
@@ -42,4 +47,4 @@ jobs:
         run: pnpm install
 
       - name: Build
-        run: pnpm build
+        run: pnpm build-local
